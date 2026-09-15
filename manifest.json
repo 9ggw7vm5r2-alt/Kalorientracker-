@@ -1,0 +1,10 @@
+{
+  "name":"Kalorien Tracker Pro",
+  "short_name":"Kalorien",
+  "start_url":"/",
+  "display":"standalone",
+  "background_color":"#ffffff",
+  "theme_color":"#19c56f",
+  "description":"Kalorien, Makros, Gewicht, Rezepte, Fitness, Statistiken und smarte Ernährungsplanung.",
+  "share_target":{"action":"/?share=1","method":"GET","params":{"title":"title","text":"text","url":"url"}}
+}
