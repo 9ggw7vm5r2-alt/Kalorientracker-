@@ -68,6 +68,9 @@ function applySettings(){let m=macroGoals();$('proteinGoal').value=m.protein;$('
 $('exportData').onclick=()=>{let all={goal:LS.get('kc-goal',2000),macros:macroGoals(),weights:wload(),recipes:rload(),favorites:LS.get('kc-favs',[]),templates:LS.get('kc-templates',[]),days:{},fitness:{}};for(let i=0;i<90;i++){let d=new Date();d.setDate(d.getDate()-i);let s=d.toISOString().slice(0,10),a=LS.get(dayKey(s),[]);if(a.length)all.days[s]=a;let fv=loadFitness(s);if(fv.steps||fv.active||fv.exercise||fv.distance)all.fitness[s]=fv}let blob=new Blob([JSON.stringify(all,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='kalorien-tracker-daten.json';a.click();URL.revokeObjectURL(a.href)};$('clearAll').onclick=()=>{if(confirm('Wirklich alle lokalen App-Daten löschen?')){Object.keys(localStorage).filter(k=>k.startsWith('kc-')).forEach(k=>localStorage.removeItem(k));location.reload()}};
 
 const roughFoodRules=[
+  {re:/\b(proteinshake|eiweißshake|protein shake)\b/i,name:'Proteinshake',kcal:120,p:24,c:3,f:2,unit:'Portion'},
+  {re:/\b(oatly\s*barista|hafermilch|haferdrink)\b/i,name:'Haferdrink',kcal:61,p:1.1,c:7.1,f:3,unit:'100 ml'},
+
   {re:/\b(brötchen|semmel)\b/i,name:'Brötchen',kcal:160,p:5.5,c:30,f:2,unit:'Stück'},
   {re:/\b(brot|toast)\b/i,name:'Brot/Toast',kcal:110,p:4,c:20,f:1.5,unit:'Scheibe'},
   {re:/\b(käse|gouda|emmentaler)\b/i,name:'Käse',kcal:115,p:8,c:.3,f:9,unit:'Portion'},
@@ -108,7 +111,15 @@ function roughQty(text,re){
 }
 function localRoughEstimate(text){
   const t=String(text||'').trim();let items=[];
-  roughFoodRules.forEach(r=>{if(r.re.test(t)){let q=roughQty(t,r.re),mult=q;if(/\bklein(e|er|es|en)?\b/i.test(t))mult*=.78;if(/\bgroß(e|er|es|en)?|große portion|viel\b/i.test(t))mult*=1.28;items.push({name:r.name,qty:q,kcal:r.kcal*mult,protein:r.p*mult,carbs:r.c*mult,fat:r.f*mult})}});
+  roughFoodRules.forEach(r=>{if(r.re.test(t)){let q=roughQty(t,r.re),mult=q;
+    if(r.unit==='100 ml'){
+      const ml=t.match(/(\d+(?:[\.,]\d+)?)\s*ml/i);
+      if(ml){q=parseFloat(ml[1].replace(',','.'))||100;mult=q/100;}
+    }
+    if(/\bklein(e|er|es|en)?\b/i.test(t))mult*=.78;
+    if(/\bgroß(e|er|es|en)?|große portion|viel\b/i.test(t))mult*=1.28;
+    items.push({name:r.name,qty:q,kcal:r.kcal*mult,protein:r.p*mult,carbs:r.c*mult,fat:r.f*mult})
+  }});
   if(!items.length){let base=/snack|klein/i.test(t)?280:/frühstück/i.test(t)?450:/abend|mittag|teller|portion/i.test(t)?650:500;items=[{name:'Grob geschätzte Mahlzeit',qty:1,kcal:base,protein:Math.round(base*.045),carbs:Math.round(base*.12),fat:Math.round(base*.035)}]}
   let sum=k=>items.reduce((a,x)=>a+(+x[k]||0),0);return {name:t.slice(0,90)||'Grob geschätzte Mahlzeit',kcal:Math.round(sum('kcal')),protein:+sum('protein').toFixed(1),carbs:+sum('carbs').toFixed(1),fat:+sum('fat').toFixed(1),items,note:'Grobe Schätzung anhand typischer Portionsgrößen. Menge, Zubereitung, Öl, Saucen und Marken können die tatsächlichen Werte deutlich verändern.'};
 }
@@ -126,7 +137,7 @@ async function estimateRoughMeal(){
     <button class="primary" id="roughEstimateUse">Schätzung übernehmen</button>
   </div>`;
   document.getElementById('roughEstimateUse')?.addEventListener('click',()=>{
-    addMeal({name:text,kcal:Math.round(est.kcal),protein:Math.round(est.protein),carbs:Math.round(est.carbs),fat:Math.round(est.fat)});
+    addMeal(text,Math.round(est.kcal),Math.round(est.protein),Math.round(est.carbs),Math.round(est.fat),$('type')?.value||'Mahlzeit');
     closeQuickSheet();
   });
 }

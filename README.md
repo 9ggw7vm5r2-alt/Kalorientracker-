@@ -1,9 +1,10 @@
-# Kalorientracker V14 – Vercel Clean
+# Kalorientracker V15 – Vercel
 
-Statische, bereinigte Version für Vercel.
-- Kein Python-/Serverless-Entry-Point
-- Grobe Mahlzeitenschätzung läuft direkt im Browser
-- Supabase Cloud-Konfiguration bleibt enthalten
-- Foto-KI wird in einem späteren Schritt als sichere Server-Funktion ergänzt
+Fixes:
+- „Schätzung übernehmen“ trägt Kalorien und Makros korrekt als Mahlzeit ein.
+- Grobe Schätzung erkennt Proteinshake sowie Haferdrink/Oatly Barista besser.
+- Mengen wie „250 ml“ werden für Haferdrink berücksichtigt.
+- Statische Vercel-Version ohne Flask-Abhängigkeit.
 
-Alle Dateien direkt ins Root des GitHub-Repositories hochladen.
+Alle Dateien ins Root des bestehenden GitHub-Repositories hochladen und vorhandene Dateien ersetzen.
+Framework Preset in Vercel: Other.
