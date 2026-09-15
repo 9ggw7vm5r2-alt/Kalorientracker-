@@ -113,13 +113,22 @@ function localRoughEstimate(text){
   let sum=k=>items.reduce((a,x)=>a+(+x[k]||0),0);return {name:t.slice(0,90)||'Grob geschätzte Mahlzeit',kcal:Math.round(sum('kcal')),protein:+sum('protein').toFixed(1),carbs:+sum('carbs').toFixed(1),fat:+sum('fat').toFixed(1),items,note:'Grobe Schätzung anhand typischer Portionsgrößen. Menge, Zubereitung, Öl, Saucen und Marken können die tatsächlichen Werte deutlich verändern.'};
 }
 async function estimateRoughMeal(){
-  const text=$('roughEstimateText')?.value.trim();if(!text)return;
-  const box=$('roughEstimateResult');box.innerHTML='<p class="muted">Schätze Nährwerte…</p>';let j=null;
-  try{let r=await fetch('/api/estimate-meal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});if(r.ok)j=await r.json()}catch{}
-  if(!j)j=localRoughEstimate(text);
-  const kcal=Math.round(+j.kcal||0),protein=+(j.protein||0),carbs=+(j.carbs||0),fat=+(j.fat||0);
-  box.innerHTML=`<div class="rough-estimate-result-card"><div class="estimate-total"><div><small>Geschätzte Mahlzeit</small><b>${esc(j.name||text)}</b></div><b>${kcal} kcal</b></div><div class="estimate-macros"><div><b>${Math.round(protein)} g</b><small>Protein</small></div><div><b>${Math.round(carbs)} g</b><small>Kohlenhydrate</small></div><div><b>${Math.round(fat)} g</b><small>Fett</small></div></div><p class="estimate-note">${esc(j.note||'Schätzung – bitte bei Bedarf anpassen.')}</p><button id="roughEstimateSave" class="btn primary wide">Schätzung übernehmen</button></div>`;
-  $('roughEstimateSave').onclick=()=>{addMeal(j.name||text,kcal,protein,carbs,fat,$('type')?.value||'Mahlzeit');closeQuickSheet();};
+  const text=(document.getElementById('roughEstimateText')?.value||'').trim();
+  const out=document.getElementById('roughEstimateResult');
+  if(!text){ if(out) out.innerHTML='<div class="hint">Bitte beschreibe zuerst dein Essen.</div>'; return; }
+  const est=localRoughEstimate(text);
+  if(!out) return;
+  out.innerHTML=`<div class="rough-estimate-result-card">
+    <strong>Geschätzte Mahlzeit</strong>
+    <div class="estimate-kcal">${Math.round(est.kcal)} kcal</div>
+    <div class="estimate-macros"><span>Protein ${Math.round(est.protein)} g</span><span>KH ${Math.round(est.carbs)} g</span><span>Fett ${Math.round(est.fat)} g</span></div>
+    <div class="hint">Grobe Schätzung. Menge, Zubereitung, Öl, Soßen und Marken können die Werte deutlich verändern.</div>
+    <button class="primary" id="roughEstimateUse">Schätzung übernehmen</button>
+  </div>`;
+  document.getElementById('roughEstimateUse')?.addEventListener('click',()=>{
+    addMeal({name:text,kcal:Math.round(est.kcal),protein:Math.round(est.protein),carbs:Math.round(est.carbs),fat:Math.round(est.fat)});
+    closeQuickSheet();
+  });
 }
 if($('quickEstimate'))$('quickEstimate').onclick=()=>{$('roughEstimateBox')?.classList.toggle('on');setTimeout(()=>$('roughEstimateText')?.focus(),80)};
 if($('roughEstimateRun'))$('roughEstimateRun').onclick=estimateRoughMeal;
