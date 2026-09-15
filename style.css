@@ -84,3 +84,9 @@ main{width:min(760px,100%);padding-left:18px;padding-right:18px}
 
 /* V19 Kochbuch */
 .recipe-grid{display:grid;gap:12px}.smart-recipe{border:1px solid rgba(30,60,90,.08);border-radius:18px;overflow:hidden;background:#fff;margin-top:12px}.smart-recipe.featured{box-shadow:0 10px 30px rgba(30,80,120,.10)}.recipe-photo{height:112px;display:grid;place-items:center;font-size:64px;background:linear-gradient(135deg,#edf7ff,#eefbf3)}.recipe-body{padding:14px}.recipe-top{display:flex;justify-content:space-between;gap:10px}.recipe-top>b{font-size:17px}.recipe-top span{font-size:12px;color:#708090;white-space:nowrap}.recipe-macros{display:flex;gap:10px;flex-wrap:wrap;margin:9px 0;font-size:13px}.recipe-macros strong{color:#17945a}.smart-recipe details{margin:10px 0}.smart-recipe summary{font-weight:700;cursor:pointer}.smart-recipe ul{padding-left:20px;margin:8px 0}.smart-recipe p{line-height:1.45}.bottom-nav{overflow-x:auto}.bottom-nav .tab{min-width:64px}
+
+/* V20 echte integrierte Food-Bilder */
+.recipe-photo{height:170px;padding:0;overflow:hidden;background:#eef3f6}
+.recipe-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.smart-recipe.featured .recipe-photo{height:220px}
+.meal-thumb img{width:100%;height:100%;object-fit:cover;display:block}

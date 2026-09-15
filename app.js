@@ -1,4 +1,4 @@
-window.KC_BUILD='V19';
+window.KC_BUILD='V21';
 
 const $=id=>document.getElementById(id), today=new Date().toISOString().slice(0,10);$('date').value=today;$('wdate').value=today;
 const LS={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))};
@@ -24,6 +24,41 @@ const dayKey=d=>'kc-day-'+d, loadDay=()=>LS.get(dayKey($('date').value),[]), sav
 const fitnessKey=d=>'kc-fitness-'+d,loadFitness=(d=$('date').value)=>LS.get(fitnessKey(d),{steps:0,active:0,exercise:0,distance:0}),saveFitness=(v,d=$('date').value)=>LS.set(fitnessKey(d),v);
 function macroGoals(){return LS.get('kc-macros',{protein:150,carbs:220,fat:65})}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+
+
+
+const AI_IMAGE_CACHE_KEY='kc-ai-food-images-v1';
+function aiImageCache(){try{return JSON.parse(localStorage.getItem(AI_IMAGE_CACHE_KEY)||'{}')}catch{return {}}}
+function aiImageKey(name){return String(name||'').toLowerCase().trim().replace(/\s+/g,' ').slice(0,120)}
+async function ensureAIMealImage(meal){
+  if(!meal||meal.image||meal.aiImage)return;
+  const key=aiImageKey(meal.name);if(!key)return;
+  const cache=aiImageCache();
+  if(cache[key]){meal.aiImage=cache[key];saveDay(loadDay().map(x=>x.id===meal.id?meal:x));render();return;}
+  try{
+    const r=await fetch('/api/generate-food-image',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dish:meal.name})});
+    if(!r.ok)return;
+    const data=await r.json();if(!data.image)return;
+    meal.aiImage=data.image;cache[key]=data.image;
+    try{localStorage.setItem(AI_IMAGE_CACHE_KEY,JSON.stringify(cache))}catch{}
+    saveDay(loadDay().map(x=>x.id===meal.id?meal:x));render();
+  }catch{}
+}
+function queueMissingAIMealImages(meals){
+  const missing=(meals||[]).filter(x=>!x.image&&!x.aiImage).slice(0,2);
+  missing.forEach((x,i)=>setTimeout(()=>ensureAIMealImage(x),500+i*900));
+}
+
+const builtInMealImages=[
+ [/protein.*shake|eiweiß.*shake|oatly.*barista/,'/images/protein-shake.jpg'],
+ [/spaghetti|bolognese|pasta|nudel/,'/images/bolognese.jpg'],
+ [/hähnchen|chicken.*bowl|reis.*bowl/,'/images/chicken-bowl.jpg'],
+ [/chili/,'/images/chili.jpg'],[/curry/,'/images/curry.jpg'],
+ [/porridge|haferflocken|müsli/,'/images/porridge.jpg'],
+ [/overnight.*oat/,'/images/overnight-oats.jpg'],
+ [/lachs|salmon/,'/images/salmon.jpg'],[/salat/,'/images/salad.jpg']
+];
+function builtInMealImage(name){return (builtInMealImages.find(([re])=>re.test(String(name||'').toLowerCase()))||[])[1]||'';}
 
 function mealVisual(name,type){
   const t=(String(name||'')+' '+String(type||'')).toLowerCase();
@@ -86,8 +121,8 @@ window.editMeal=id=>{
 
 function addMeal(name,kcal,protein=0,carbs=0,fat=0,type='Mahlzeit'){if(!name||!(+kcal>0))return alert('Bitte Lebensmittel und Kalorien eingeben.');let a=loadDay();a.push({id:Date.now(),name,kcal:+kcal,protein:+protein||0,carbs:+carbs||0,fat:+fat||0,type,time:new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})});saveDay(a);render();}
 window.delMeal=id=>{saveDay(loadDay().filter(x=>x.id!==id));render()};
-function render(){let a=loadDay(),u=a.reduce((s,x)=>s+x.kcal,0),p=a.reduce((s,x)=>s+x.protein,0),c=a.reduce((s,x)=>s+x.carbs,0),f=a.reduce((s,x)=>s+x.fat,0),base=+$('goal').value||2000,fit=loadFitness(),credit=LS.get('kc-credit-active',false),g=base+(credit?(+fit.active||0):0),m=macroGoals();$('used').textContent=Math.round(u);$('left').textContent=Math.round(g-u);$('prot').textContent=Math.round(p);$('count').textContent=a.length;let pct=Math.min(100,u/g*100);$('bar').style.width=pct+'%';if($('usedRing'))$('usedRing').textContent=Math.round(u);if($('heroGoalRing'))$('heroGoalRing').textContent=Math.round(base);if($('activityCredit'))$('activityCredit').textContent=Math.round(fit.active||0);if($('heroGoal'))$('heroGoal').textContent=Math.round(base);if($('progressText'))$('progressText').textContent=Math.round(pct)+' %';if($('calorieRing'))$('calorieRing').style.setProperty('--p',Math.min(100,Math.max(0,pct)));if($('leftMirror'))$('leftMirror').textContent=Math.round(g-u);if($('todaySteps'))$('todaySteps').textContent=Math.round(fit.steps||0).toLocaleString('de-DE');if($('todayActive'))$('todayActive').textContent=Math.round(fit.active||0);if($('todayExercise'))$('todayExercise').textContent=Math.round(fit.exercise||0);const mealOrder=['Frühstück','Mittagessen','Abendessen','Snack','Getränk','Datenbank','Rezept','Foto-KI','Plan','Mahlzeit'];const icons={'Frühstück':'🥣','Mittagessen':'🥗','Abendessen':'🍽️','Snack':'🍎','Getränk':'🥤','Datenbank':'🥕','Rezept':'🍳','Foto-KI':'📷','Plan':'✓','Mahlzeit':'🍴'};let groups={};a.forEach(x=>(groups[x.type||'Mahlzeit']??=[]).push(x));let ordered=[...mealOrder.filter(k=>groups[k]),...Object.keys(groups).filter(k=>!mealOrder.includes(k))];if(!ordered.length)ordered=['Frühstück','Mittagessen','Abendessen','Snack'];$('entries').innerHTML=ordered.map(type=>{let xs=groups[type]||[],sum=xs.reduce((q,x)=>q+x.kcal,0);return `<div class="meal-group"><div class="meal-group-head"><div class="meal-group-title"><span class="meal-avatar">${icons[type]||'🍴'}</span><div><b>${esc(type)}</b><small>${xs.length?xs.length+' Eintrag'+(xs.length>1?'e':''):'Noch nichts erfasst'}</small></div></div><div style="display:flex;align-items:center;gap:9px"><span class="meal-kcal">${Math.round(sum)} kcal</span><button class="meal-add" onclick="openQuickFor('${encodeURIComponent(type)}')">＋</button></div></div>${xs.length?xs.map(x=>`<div class="meal-row"><button class="meal-thumb meal-photo-btn" onclick="changeMealPhoto(${x.id})" aria-label="Foto ${x.image?'ändern':'hinzufügen'}">${x.image?`<img src="${x.image}" alt="">`:`<span>${mealVisual(x.name,x.type)}</span><small>Foto</small>`}</button><div class="meal-row-main"><b>${esc(x.name)}</b><div class="food-meta">P ${(+x.protein||0).toFixed(0)} · KH ${(+x.carbs||0).toFixed(0)} · F ${(+x.fat||0).toFixed(0)}</div></div><div class="meal-row-right"><b>${Math.round(x.kcal)} kcal</b><div class="meal-actions"><button class="meal-edit" onclick="editMeal(${x.id})">Ändern</button><button class="meal-edit" onclick="changeMealPhoto(${x.id})">${x.image?'Foto ändern':'Foto'}</button><button class="meal-delete" onclick="delMeal(${x.id})">Löschen</button></div></div></div>`).join(''):`<div class="empty-meal">Mit + hinzufügen</div>`}</div>`}).join('');if($('todayActiveMirror'))$('todayActiveMirror').textContent=Math.round(fit.active||0);
-  const topMacros=[['Protein',p,m.protein,'macroTopProtein'],['Carbs',c,m.carbs,'macroTopCarbs'],['Fat',f,m.fat,'macroTopFat']];topMacros.forEach(([n,val,goal,id])=>{if($(id))$(id).textContent=Math.round(val);if($(id+'Goal'))$(id+'Goal').textContent=Math.round(goal);let mp=goal?Math.min(100,val/goal*100):0;if($(id+'Bar'))$(id+'Bar').style.width=mp+'%';if($(id+'Pct'))$(id+'Pct').textContent=Math.round(mp)+' %'});$('macroSummary').innerHTML=`<div class="macro protein"><span>Protein</span><b>${Math.round(p)}/${m.protein} g</b></div><div class="progress"><i style="width:${Math.min(100,p/m.protein*100)}%;background:linear-gradient(90deg,#3b82f6,#60a5fa)"></i></div><br><div class="macro carbs"><span>Kohlenhydrate</span><b>${Math.round(c)}/${m.carbs} g</b></div><div class="progress"><i style="width:${Math.min(100,c/m.carbs*100)}%;background:linear-gradient(90deg,#f59e0b,#fbbf24)"></i></div><br><div class="macro fat"><span>Fett</span><b>${Math.round(f)}/${m.fat} g</b></div><div class="progress"><i style="width:${Math.min(100,f/m.fat*100)}%;background:linear-gradient(90deg,#8b5cf6,#a78bfa)"></i></div>`;renderTemplates();renderFitness();}
+function render(){let a=loadDay(),u=a.reduce((s,x)=>s+x.kcal,0),p=a.reduce((s,x)=>s+x.protein,0),c=a.reduce((s,x)=>s+x.carbs,0),f=a.reduce((s,x)=>s+x.fat,0),base=+$('goal').value||2000,fit=loadFitness(),credit=LS.get('kc-credit-active',false),g=base+(credit?(+fit.active||0):0),m=macroGoals();$('used').textContent=Math.round(u);$('left').textContent=Math.round(g-u);$('prot').textContent=Math.round(p);$('count').textContent=a.length;let pct=Math.min(100,u/g*100);$('bar').style.width=pct+'%';if($('usedRing'))$('usedRing').textContent=Math.round(u);if($('heroGoalRing'))$('heroGoalRing').textContent=Math.round(base);if($('activityCredit'))$('activityCredit').textContent=Math.round(fit.active||0);if($('heroGoal'))$('heroGoal').textContent=Math.round(base);if($('progressText'))$('progressText').textContent=Math.round(pct)+' %';if($('calorieRing'))$('calorieRing').style.setProperty('--p',Math.min(100,Math.max(0,pct)));if($('leftMirror'))$('leftMirror').textContent=Math.round(g-u);if($('todaySteps'))$('todaySteps').textContent=Math.round(fit.steps||0).toLocaleString('de-DE');if($('todayActive'))$('todayActive').textContent=Math.round(fit.active||0);if($('todayExercise'))$('todayExercise').textContent=Math.round(fit.exercise||0);const mealOrder=['Frühstück','Mittagessen','Abendessen','Snack','Getränk','Datenbank','Rezept','Foto-KI','Plan','Mahlzeit'];const icons={'Frühstück':'🥣','Mittagessen':'🥗','Abendessen':'🍽️','Snack':'🍎','Getränk':'🥤','Datenbank':'🥕','Rezept':'🍳','Foto-KI':'📷','Plan':'✓','Mahlzeit':'🍴'};let groups={};a.forEach(x=>(groups[x.type||'Mahlzeit']??=[]).push(x));let ordered=[...mealOrder.filter(k=>groups[k]),...Object.keys(groups).filter(k=>!mealOrder.includes(k))];if(!ordered.length)ordered=['Frühstück','Mittagessen','Abendessen','Snack'];$('entries').innerHTML=ordered.map(type=>{let xs=groups[type]||[],sum=xs.reduce((q,x)=>q+x.kcal,0);return `<div class="meal-group"><div class="meal-group-head"><div class="meal-group-title"><span class="meal-avatar">${icons[type]||'🍴'}</span><div><b>${esc(type)}</b><small>${xs.length?xs.length+' Eintrag'+(xs.length>1?'e':''):'Noch nichts erfasst'}</small></div></div><div style="display:flex;align-items:center;gap:9px"><span class="meal-kcal">${Math.round(sum)} kcal</span><button class="meal-add" onclick="openQuickFor('${encodeURIComponent(type)}')">＋</button></div></div>${xs.length?xs.map(x=>`<div class="meal-row"><button class="meal-thumb meal-photo-btn" onclick="changeMealPhoto(${x.id})" aria-label="Foto ${x.image?'ändern':'hinzufügen'}">${(x.image||x.aiImage||builtInMealImage(x.name))?`<img src="${x.image||x.aiImage||builtInMealImage(x.name)}" alt="${esc(x.name)}">`:`<span>${mealVisual(x.name,x.type)}</span><small>Foto</small>`}</button><div class="meal-row-main"><b>${esc(x.name)}</b><div class="food-meta">P ${(+x.protein||0).toFixed(0)} · KH ${(+x.carbs||0).toFixed(0)} · F ${(+x.fat||0).toFixed(0)}</div></div><div class="meal-row-right"><b>${Math.round(x.kcal)} kcal</b><div class="meal-actions"><button class="meal-edit" onclick="editMeal(${x.id})">Ändern</button><button class="meal-edit" onclick="changeMealPhoto(${x.id})">${x.image?'Foto ändern':'Foto'}</button><button class="meal-delete" onclick="delMeal(${x.id})">Löschen</button></div></div></div>`).join(''):`<div class="empty-meal">Mit + hinzufügen</div>`}</div>`}).join('');if($('todayActiveMirror'))$('todayActiveMirror').textContent=Math.round(fit.active||0);
+  const topMacros=[['Protein',p,m.protein,'macroTopProtein'],['Carbs',c,m.carbs,'macroTopCarbs'],['Fat',f,m.fat,'macroTopFat']];topMacros.forEach(([n,val,goal,id])=>{if($(id))$(id).textContent=Math.round(val);if($(id+'Goal'))$(id+'Goal').textContent=Math.round(goal);let mp=goal?Math.min(100,val/goal*100):0;if($(id+'Bar'))$(id+'Bar').style.width=mp+'%';if($(id+'Pct'))$(id+'Pct').textContent=Math.round(mp)+' %'});$('macroSummary').innerHTML=`<div class="macro protein"><span>Protein</span><b>${Math.round(p)}/${m.protein} g</b></div><div class="progress"><i style="width:${Math.min(100,p/m.protein*100)}%;background:linear-gradient(90deg,#3b82f6,#60a5fa)"></i></div><br><div class="macro carbs"><span>Kohlenhydrate</span><b>${Math.round(c)}/${m.carbs} g</b></div><div class="progress"><i style="width:${Math.min(100,c/m.carbs*100)}%;background:linear-gradient(90deg,#f59e0b,#fbbf24)"></i></div><br><div class="macro fat"><span>Fett</span><b>${Math.round(f)}/${m.fat} g</b></div><div class="progress"><i style="width:${Math.min(100,f/m.fat*100)}%;background:linear-gradient(90deg,#8b5cf6,#a78bfa)"></i></div>`;queueMissingAIMealImages(a);renderTemplates();renderFitness();}
 $('add').onclick=()=>{addMeal($('food').value.trim(),$('kcal').value,$('protein').value,$('carbs').value,$('fat').value,$('type').value);['food','kcal','protein','carbs','fat'].forEach(x=>$(x).value='')};$('date').onchange=render;$('goal').oninput=()=>{LS.set('kc-goal',+$('goal').value);render()};$('goal').value=LS.get('kc-goal',2000);
 function foodCard(x){let id=encodeURIComponent(x.name);return `<div class="item"><div><b>${esc(x.name)}</b><div class="muted">${x.unit||'100 g'} · P ${Math.round(x.protein||0)} · KH ${Math.round(x.carbs||0)} · F ${Math.round(x.fat||0)}</div></div><div><b>${Math.round(x.kcal)} kcal</b><div><button class="fav" onclick="toggleFav('${id}')">☆</button><button class="btn soft" onclick='quickAdd(${JSON.stringify(x).replace(/'/g,"&#39;")})'>+</button></div></div></div>`}
 window.quickAdd=x=>addMeal(x.name,x.kcal,x.protein,x.carbs,x.fat,'Datenbank');window.toggleFav=n=>{n=decodeURIComponent(n);let f=LS.get('kc-favs',[]),x=foodDB.find(y=>y.name===n);if(!x)return;f.some(y=>y.name===n)?f=f.filter(y=>y.name!==n):f.push(x);LS.set('kc-favs',f);renderFavorites()};
@@ -240,9 +275,24 @@ const smartRecipes=[
  {name:'Thunfisch-Kartoffel-Salat',emoji:'🥗',kcal:490,p:42,c:50,f:13,time:'20 Min.',ingredients:['1 Dose Thunfisch im eigenen Saft','250 g Kartoffeln','Gurke & Tomate','80 g Joghurt','Senf'],steps:'Kartoffeln garen und abkühlen. Mit Gemüse und Thunfisch mischen, Joghurt-Senf-Dressing unterheben.'},
  {name:'Overnight Oats Protein',emoji:'🥣',kcal:450,p:32,c:58,f:10,time:'5 Min. + kaltstellen',ingredients:['60 g Haferflocken','200 ml Milch/Haferdrink','150 g Skyr','Beeren','Zimt'],steps:'Alles vermischen und über Nacht kaltstellen. Morgens mit Beeren toppen.'}
 ];
+
+function recipeImage(r){
+ const n=String(r.name||'').toLowerCase();
+ if(/lachs/.test(n))return '/images/salmon.jpg';
+ if(/skyr|beeren|porridge/.test(n))return '/images/porridge.jpg';
+ if(/hähnchen.*reis/.test(n))return '/images/chicken-bowl.jpg';
+ if(/pasta|bolognese/.test(n))return '/images/bolognese.jpg';
+ if(/chili/.test(n))return '/images/chili.jpg';
+ if(/curry/.test(n))return '/images/curry.jpg';
+ if(/salat|thunfisch/.test(n))return '/images/salad.jpg';
+ if(/overnight/.test(n))return '/images/overnight-oats.jpg';
+ if(/rührei|wrap/.test(n))return '/images/chicken-bowl.jpg';
+ return '/images/porridge.jpg';
+}
+
 function recipeCard(r,featured=false){
  const ing=r.ingredients.map(x=>`<li>${esc(x)}</li>`).join('');
- return `<article class="smart-recipe ${featured?'featured':''}"><div class="recipe-photo">${r.emoji}</div><div class="recipe-body"><div class="recipe-top"><b>${esc(r.name)}</b><span>${r.time}</span></div><div class="recipe-macros"><strong>${r.kcal} kcal</strong><span>P ${r.p} g</span><span>KH ${r.c} g</span><span>F ${r.f} g</span></div><details><summary>Zutaten & Zubereitung</summary><ul>${ing}</ul><p>${esc(r.steps)}</p></details><button class="btn soft wide" onclick="addSmartRecipe('${encodeURIComponent(r.name)}')">Als Mahlzeit eintragen</button></div></article>`;
+ return `<article class="smart-recipe ${featured?'featured':''}"><div class="recipe-photo"><img src="${recipeImage(r)}" alt="${esc(r.name)}" loading="lazy"></div><div class="recipe-body"><div class="recipe-top"><b>${esc(r.name)}</b><span>${r.time}</span></div><div class="recipe-macros"><strong>${r.kcal} kcal</strong><span>P ${r.p} g</span><span>KH ${r.c} g</span><span>F ${r.f} g</span></div><details><summary>Zutaten & Zubereitung</summary><ul>${ing}</ul><p>${esc(r.steps)}</p></details><button class="btn soft wide" onclick="addSmartRecipe('${encodeURIComponent(r.name)}')">Als Mahlzeit eintragen</button></div></article>`;
 }
 window.addSmartRecipe=name=>{
  const r=smartRecipes.find(x=>x.name===decodeURIComponent(name));if(!r)return;
@@ -255,3 +305,21 @@ function renderSmartRecipes(){
  const lib=document.getElementById('smartRecipeLibrary');if(lib)lib.innerHTML=smartRecipes.filter(x=>x!==daily).map(x=>recipeCard(x)).join('');
 }
 renderSmartRecipes();
+
+
+async function ensureAIRecipeImages(){
+ const cards=[...document.querySelectorAll('.smart-recipe')];
+ for(let i=0;i<Math.min(cards.length,4);i++){
+   const card=cards[i],img=card.querySelector('.recipe-photo img'),name=card.querySelector('.recipe-top b')?.textContent;
+   if(!img||!name)continue;
+   const key='recipe:'+aiImageKey(name),cache=aiImageCache();
+   if(cache[key]){img.src=cache[key];continue;}
+   try{
+     const r=await fetch('/api/generate-food-image',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dish:name})});
+     if(!r.ok)continue;const data=await r.json();if(!data.image)continue;
+     img.src=data.image;cache[key]=data.image;try{localStorage.setItem(AI_IMAGE_CACHE_KEY,JSON.stringify(cache))}catch{}
+   }catch{}
+ }
+}
+
+setTimeout(ensureAIRecipeImages,1200);
