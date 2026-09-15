@@ -1,3 +1,4 @@
+window.KC_BUILD='V16';
 
 const $=id=>document.getElementById(id), today=new Date().toISOString().slice(0,10);$('date').value=today;$('wdate').value=today;
 const LS={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))};
@@ -137,7 +138,20 @@ async function estimateRoughMeal(){
     <button class="primary" id="roughEstimateUse">Schätzung übernehmen</button>
   </div>`;
   document.getElementById('roughEstimateUse')?.addEventListener('click',()=>{
-    addMeal(text,Math.round(est.kcal),Math.round(est.protein),Math.round(est.carbs),Math.round(est.fat),$('type')?.value||'Mahlzeit');
+    const meal={
+      id:Date.now(),
+      name:text,
+      kcal:Math.max(1,Math.round(Number(est.kcal)||0)),
+      protein:Math.max(0,Math.round(Number(est.protein)||0)),
+      carbs:Math.max(0,Math.round(Number(est.carbs)||0)),
+      fat:Math.max(0,Math.round(Number(est.fat)||0)),
+      type:'Mahlzeit',
+      time:new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})
+    };
+    const meals=loadDay();
+    meals.push(meal);
+    saveDay(meals);
+    render();
     closeQuickSheet();
   });
 }

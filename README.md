@@ -1,10 +1,6 @@
-# Kalorientracker V15 – Vercel
+# Kalorientracker V16 – Vercel
 
-Fixes:
-- „Schätzung übernehmen“ trägt Kalorien und Makros korrekt als Mahlzeit ein.
-- Grobe Schätzung erkennt Proteinshake sowie Haferdrink/Oatly Barista besser.
-- Mengen wie „250 ml“ werden für Haferdrink berücksichtigt.
-- Statische Vercel-Version ohne Flask-Abhängigkeit.
-
-Alle Dateien ins Root des bestehenden GitHub-Repositories hochladen und vorhandene Dateien ersetzen.
-Framework Preset in Vercel: Other.
+- Fix: „Schätzung übernehmen“ speichert direkt in den Tagesdaten und ist unabhängig vom manuellen Formular.
+- Cache-Bust für app.js (`?v=16`).
+- Service-Worker-Cache auf V16 angehoben.
+- Statische Vercel-Version; Framework Preset: Other.
