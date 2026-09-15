@@ -1,10 +1,9 @@
-# Kalorientracker V21 – individuelle KI-Food-Bilder
+# Kalorientracker V22 – kostenlos & ohne Bild-API
 
-- Neue Mahlzeiten erhalten automatisch ein individuell zum Namen des Gerichts generiertes Food-Foto.
-- Kochbuch-Rezepte erhalten ebenfalls KI-generierte, individuelle Bilder.
-- Eigene Fotos haben immer Vorrang.
-- KI-Bilder werden lokal zwischengespeichert, damit nicht bei jedem Öffnen neu generiert wird.
-- Serverseitige Vercel Function `api/generate-food-image.js`.
-- Benötigt in Vercel die Umgebungsvariable `OPENAI_API_KEY`.
-- API-Schlüssel wird niemals an den Browser ausgeliefert.
+- Keine OpenAI-API und keine kostenpflichtige KI-Bildgenerierung.
+- Keine API-Schlüssel oder zusätzlichen laufenden Kosten nötig.
+- Passende Food-Bilder sind direkt in der App enthalten.
+- Eigene Fotos für Mahlzeiten bleiben möglich und haben Vorrang.
+- Kochbuch mit lokalen Bildern bleibt erhalten.
+- Keine Aufrufe mehr an `/api/generate-food-image`.
 - Vercel Framework Preset: Other.
