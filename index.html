@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="Kalorien">
 <link rel="manifest" href="/manifest.json">
 <title>Kalorien Tracker Pro</title>
-<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/style.css?v=19">
 </head>
 <body><main>
 <header class="app-header home-header">
@@ -114,6 +114,13 @@
 <section id="photo" class="section"><div class="card"><h2>Essensfoto analysieren</h2><p class="notice">Foto-Schätzungen sind nicht exakt. Öle, Saucen und Portionsgrößen können stark abweichen.</p><input id="photoFile" type="file" accept="image/*" capture="environment"><img id="preview" style="display:none;width:100%;max-height:360px;object-fit:contain;border-radius:14px;margin-top:10px"><button id="analyze" class="btn primary wide">Foto analysieren</button><p id="photoMsg" class="muted"></p><div id="photoResult"></div></div></section>
 
 
+
+<section id="cookbook" class="section">
+  <div class="section-head"><div><div class="eyebrow">TÄGLICHE INSPIRATION</div><h2>Gerichte & Kochbuch</h2></div><span class="section-hint">Jeden Tag neu</span></div>
+  <div class="card daily-recipe-card"><div class="eyebrow">REZEPT DES TAGES</div><div id="dailyRecipe"></div></div>
+  <div class="card"><div class="card-title"><div><h2>Rezeptideen</h2><p class="muted">Alltagstauglich, proteinreich und ausgewogen</p></div></div><div id="smartRecipeLibrary" class="recipe-grid"></div></div>
+</section>
+
 <section id="more" class="section">
 <div class="section-head"><div><div class="eyebrow">WEITERE FUNKTIONEN</div><h2>Mehr</h2></div><span class="section-hint">Alles an einem Ort</span></div>
 <div class="more-grid">
@@ -152,10 +159,10 @@
 <nav class="bottom-nav" aria-label="Hauptnavigation">
   <button class="tab on" data-t="today"><span>⌂</span><small>Heute</small></button>
   <button class="tab" data-t="foods"><span>＋</span><small>Essen</small></button>
+  <button class="tab" data-t="cookbook"><span>⌑</span><small>Kochbuch</small></button>
   <button class="tab" data-t="fitness"><span>♥</span><small>Fitness</small></button>
-  <button class="tab" data-t="stats"><span>▥</span><small>Statistik</small></button>
   <button class="tab" data-t="more"><span>•••</span><small>Mehr</small></button>
 </nav>
-<script src="/app.js?v=16"></script>
+<script src="/app.js?v=19"></script>
 <script src="/cloud-config.js"></script>
 <script src="/cloud.js"></script></main></body></html>

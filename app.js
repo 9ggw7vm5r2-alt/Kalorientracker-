@@ -1,4 +1,4 @@
-window.KC_BUILD='V16';
+window.KC_BUILD='V19';
 
 const $=id=>document.getElementById(id), today=new Date().toISOString().slice(0,10);$('date').value=today;$('wdate').value=today;
 const LS={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))};
@@ -24,9 +24,69 @@ const dayKey=d=>'kc-day-'+d, loadDay=()=>LS.get(dayKey($('date').value),[]), sav
 const fitnessKey=d=>'kc-fitness-'+d,loadFitness=(d=$('date').value)=>LS.get(fitnessKey(d),{steps:0,active:0,exercise:0,distance:0}),saveFitness=(v,d=$('date').value)=>LS.set(fitnessKey(d),v);
 function macroGoals(){return LS.get('kc-macros',{protein:150,carbs:220,fat:65})}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+
+function mealVisual(name,type){
+  const t=(String(name||'')+' '+String(type||'')).toLowerCase();
+  const map=[
+    [/pizza/,'🍕'],[/burger/,'🍔'],[/döner|kebab/,'🥙'],[/pasta|nudel|spaghetti/,'🍝'],
+    [/reis|curry/,'🍛'],[/salat/,'🥗'],[/suppe/,'🍲'],[/lachs|fisch/,'🐟'],
+    [/hähnchen|chicken|huhn/,'🍗'],[/ei|rührei|spiegelei/,'🍳'],[/brot|toast|brötchen/,'🥪'],
+    [/banane/,'🍌'],[/apfel/,'🍎'],[/shake|protein/,'🥤'],[/kaffee/,'☕'],[/joghurt|skyr|müsli|hafer/,'🥣'],
+    [/frühstück/,'🥣'],[/mittag/,'🥗'],[/abend/,'🍽️'],[/snack/,'🍎'],[/getränk/,'🥤']
+  ];
+  return (map.find(([re])=>re.test(t))||[])[1]||'🍽️';
+}
+
+function resizeMealPhoto(file,max=640,quality=.78){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onerror=reject;
+    reader.onload=()=>{
+      const img=new Image();
+      img.onerror=reject;
+      img.onload=()=>{
+        let w=img.width,h=img.height,scale=Math.min(1,max/Math.max(w,h));
+        const cv=document.createElement('canvas');cv.width=Math.round(w*scale);cv.height=Math.round(h*scale);
+        cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+        resolve(cv.toDataURL('image/jpeg',quality));
+      };
+      img.src=reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+window.changeMealPhoto=id=>{
+  const input=document.createElement('input');input.type='file';input.accept='image/*';input.setAttribute('capture','environment');
+  input.onchange=async()=>{
+    const file=input.files?.[0];if(!file)return;
+    try{
+      const data=await resizeMealPhoto(file);
+      const a=loadDay(),x=a.find(y=>y.id===id);if(!x)return;
+      x.image=data;saveDay(a);render();
+    }catch(e){alert('Das Foto konnte nicht gespeichert werden.');}
+  };
+  input.click();
+};
+window.removeMealPhoto=id=>{
+  const a=loadDay(),x=a.find(y=>y.id===id);if(!x)return;
+  delete x.image;saveDay(a);render();
+};
+
+window.editMeal=id=>{
+  const a=loadDay(),x=a.find(y=>y.id===id);if(!x)return;
+  const name=prompt('Gericht',x.name);if(name===null)return;
+  const kcal=prompt('Kalorien (kcal)',Math.round(x.kcal));if(kcal===null)return;
+  const protein=prompt('Protein (g)',Math.round(x.protein||0));if(protein===null)return;
+  const carbs=prompt('Kohlenhydrate (g)',Math.round(x.carbs||0));if(carbs===null)return;
+  const fat=prompt('Fett (g)',Math.round(x.fat||0));if(fat===null)return;
+  if(!name.trim()||!(+kcal>0))return alert('Bitte Gericht und gültige Kalorien eingeben.');
+  Object.assign(x,{name:name.trim(),kcal:+kcal,protein:+protein||0,carbs:+carbs||0,fat:+fat||0});
+  saveDay(a);render();
+};
+
 function addMeal(name,kcal,protein=0,carbs=0,fat=0,type='Mahlzeit'){if(!name||!(+kcal>0))return alert('Bitte Lebensmittel und Kalorien eingeben.');let a=loadDay();a.push({id:Date.now(),name,kcal:+kcal,protein:+protein||0,carbs:+carbs||0,fat:+fat||0,type,time:new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})});saveDay(a);render();}
 window.delMeal=id=>{saveDay(loadDay().filter(x=>x.id!==id));render()};
-function render(){let a=loadDay(),u=a.reduce((s,x)=>s+x.kcal,0),p=a.reduce((s,x)=>s+x.protein,0),c=a.reduce((s,x)=>s+x.carbs,0),f=a.reduce((s,x)=>s+x.fat,0),base=+$('goal').value||2000,fit=loadFitness(),credit=LS.get('kc-credit-active',false),g=base+(credit?(+fit.active||0):0),m=macroGoals();$('used').textContent=Math.round(u);$('left').textContent=Math.round(g-u);$('prot').textContent=Math.round(p);$('count').textContent=a.length;let pct=Math.min(100,u/g*100);$('bar').style.width=pct+'%';if($('usedRing'))$('usedRing').textContent=Math.round(u);if($('heroGoalRing'))$('heroGoalRing').textContent=Math.round(base);if($('activityCredit'))$('activityCredit').textContent=Math.round(fit.active||0);if($('heroGoal'))$('heroGoal').textContent=Math.round(base);if($('progressText'))$('progressText').textContent=Math.round(pct)+' %';if($('calorieRing'))$('calorieRing').style.setProperty('--p',Math.min(100,Math.max(0,pct)));if($('leftMirror'))$('leftMirror').textContent=Math.round(g-u);if($('todaySteps'))$('todaySteps').textContent=Math.round(fit.steps||0).toLocaleString('de-DE');if($('todayActive'))$('todayActive').textContent=Math.round(fit.active||0);if($('todayExercise'))$('todayExercise').textContent=Math.round(fit.exercise||0);const mealOrder=['Frühstück','Mittagessen','Abendessen','Snack','Getränk','Datenbank','Rezept','Foto-KI','Plan','Mahlzeit'];const icons={'Frühstück':'🥣','Mittagessen':'🥗','Abendessen':'🍽️','Snack':'🍎','Getränk':'🥤','Datenbank':'🥕','Rezept':'🍳','Foto-KI':'📷','Plan':'✓','Mahlzeit':'🍴'};let groups={};a.forEach(x=>(groups[x.type||'Mahlzeit']??=[]).push(x));let ordered=[...mealOrder.filter(k=>groups[k]),...Object.keys(groups).filter(k=>!mealOrder.includes(k))];if(!ordered.length)ordered=['Frühstück','Mittagessen','Abendessen','Snack'];$('entries').innerHTML=ordered.map(type=>{let xs=groups[type]||[],sum=xs.reduce((q,x)=>q+x.kcal,0);return `<div class="meal-group"><div class="meal-group-head"><div class="meal-group-title"><span class="meal-avatar">${icons[type]||'🍴'}</span><div><b>${esc(type)}</b><small>${xs.length?xs.length+' Eintrag'+(xs.length>1?'e':''):'Noch nichts erfasst'}</small></div></div><div style="display:flex;align-items:center;gap:9px"><span class="meal-kcal">${Math.round(sum)} kcal</span><button class="meal-add" onclick="openQuickFor('${encodeURIComponent(type)}')">＋</button></div></div>${xs.length?xs.map(x=>`<div class="meal-row"><div><b>${esc(x.name)}</b><div class="food-meta">P ${x.protein.toFixed(0)} · KH ${x.carbs.toFixed(0)} · F ${x.fat.toFixed(0)}</div></div><div class="meal-row-right"><b>${Math.round(x.kcal)} kcal</b><br><button class="meal-delete" onclick="delMeal(${x.id})">Löschen</button></div></div>`).join(''):`<div class="empty-meal">Mit + hinzufügen</div>`}</div>`}).join('');if($('todayActiveMirror'))$('todayActiveMirror').textContent=Math.round(fit.active||0);
+function render(){let a=loadDay(),u=a.reduce((s,x)=>s+x.kcal,0),p=a.reduce((s,x)=>s+x.protein,0),c=a.reduce((s,x)=>s+x.carbs,0),f=a.reduce((s,x)=>s+x.fat,0),base=+$('goal').value||2000,fit=loadFitness(),credit=LS.get('kc-credit-active',false),g=base+(credit?(+fit.active||0):0),m=macroGoals();$('used').textContent=Math.round(u);$('left').textContent=Math.round(g-u);$('prot').textContent=Math.round(p);$('count').textContent=a.length;let pct=Math.min(100,u/g*100);$('bar').style.width=pct+'%';if($('usedRing'))$('usedRing').textContent=Math.round(u);if($('heroGoalRing'))$('heroGoalRing').textContent=Math.round(base);if($('activityCredit'))$('activityCredit').textContent=Math.round(fit.active||0);if($('heroGoal'))$('heroGoal').textContent=Math.round(base);if($('progressText'))$('progressText').textContent=Math.round(pct)+' %';if($('calorieRing'))$('calorieRing').style.setProperty('--p',Math.min(100,Math.max(0,pct)));if($('leftMirror'))$('leftMirror').textContent=Math.round(g-u);if($('todaySteps'))$('todaySteps').textContent=Math.round(fit.steps||0).toLocaleString('de-DE');if($('todayActive'))$('todayActive').textContent=Math.round(fit.active||0);if($('todayExercise'))$('todayExercise').textContent=Math.round(fit.exercise||0);const mealOrder=['Frühstück','Mittagessen','Abendessen','Snack','Getränk','Datenbank','Rezept','Foto-KI','Plan','Mahlzeit'];const icons={'Frühstück':'🥣','Mittagessen':'🥗','Abendessen':'🍽️','Snack':'🍎','Getränk':'🥤','Datenbank':'🥕','Rezept':'🍳','Foto-KI':'📷','Plan':'✓','Mahlzeit':'🍴'};let groups={};a.forEach(x=>(groups[x.type||'Mahlzeit']??=[]).push(x));let ordered=[...mealOrder.filter(k=>groups[k]),...Object.keys(groups).filter(k=>!mealOrder.includes(k))];if(!ordered.length)ordered=['Frühstück','Mittagessen','Abendessen','Snack'];$('entries').innerHTML=ordered.map(type=>{let xs=groups[type]||[],sum=xs.reduce((q,x)=>q+x.kcal,0);return `<div class="meal-group"><div class="meal-group-head"><div class="meal-group-title"><span class="meal-avatar">${icons[type]||'🍴'}</span><div><b>${esc(type)}</b><small>${xs.length?xs.length+' Eintrag'+(xs.length>1?'e':''):'Noch nichts erfasst'}</small></div></div><div style="display:flex;align-items:center;gap:9px"><span class="meal-kcal">${Math.round(sum)} kcal</span><button class="meal-add" onclick="openQuickFor('${encodeURIComponent(type)}')">＋</button></div></div>${xs.length?xs.map(x=>`<div class="meal-row"><button class="meal-thumb meal-photo-btn" onclick="changeMealPhoto(${x.id})" aria-label="Foto ${x.image?'ändern':'hinzufügen'}">${x.image?`<img src="${x.image}" alt="">`:`<span>${mealVisual(x.name,x.type)}</span><small>Foto</small>`}</button><div class="meal-row-main"><b>${esc(x.name)}</b><div class="food-meta">P ${(+x.protein||0).toFixed(0)} · KH ${(+x.carbs||0).toFixed(0)} · F ${(+x.fat||0).toFixed(0)}</div></div><div class="meal-row-right"><b>${Math.round(x.kcal)} kcal</b><div class="meal-actions"><button class="meal-edit" onclick="editMeal(${x.id})">Ändern</button><button class="meal-edit" onclick="changeMealPhoto(${x.id})">${x.image?'Foto ändern':'Foto'}</button><button class="meal-delete" onclick="delMeal(${x.id})">Löschen</button></div></div></div>`).join(''):`<div class="empty-meal">Mit + hinzufügen</div>`}</div>`}).join('');if($('todayActiveMirror'))$('todayActiveMirror').textContent=Math.round(fit.active||0);
   const topMacros=[['Protein',p,m.protein,'macroTopProtein'],['Carbs',c,m.carbs,'macroTopCarbs'],['Fat',f,m.fat,'macroTopFat']];topMacros.forEach(([n,val,goal,id])=>{if($(id))$(id).textContent=Math.round(val);if($(id+'Goal'))$(id+'Goal').textContent=Math.round(goal);let mp=goal?Math.min(100,val/goal*100):0;if($(id+'Bar'))$(id+'Bar').style.width=mp+'%';if($(id+'Pct'))$(id+'Pct').textContent=Math.round(mp)+' %'});$('macroSummary').innerHTML=`<div class="macro protein"><span>Protein</span><b>${Math.round(p)}/${m.protein} g</b></div><div class="progress"><i style="width:${Math.min(100,p/m.protein*100)}%;background:linear-gradient(90deg,#3b82f6,#60a5fa)"></i></div><br><div class="macro carbs"><span>Kohlenhydrate</span><b>${Math.round(c)}/${m.carbs} g</b></div><div class="progress"><i style="width:${Math.min(100,c/m.carbs*100)}%;background:linear-gradient(90deg,#f59e0b,#fbbf24)"></i></div><br><div class="macro fat"><span>Fett</span><b>${Math.round(f)}/${m.fat} g</b></div><div class="progress"><i style="width:${Math.min(100,f/m.fat*100)}%;background:linear-gradient(90deg,#8b5cf6,#a78bfa)"></i></div>`;renderTemplates();renderFitness();}
 $('add').onclick=()=>{addMeal($('food').value.trim(),$('kcal').value,$('protein').value,$('carbs').value,$('fat').value,$('type').value);['food','kcal','protein','carbs','fat'].forEach(x=>$(x).value='')};$('date').onchange=render;$('goal').oninput=()=>{LS.set('kc-goal',+$('goal').value);render()};$('goal').value=LS.get('kc-goal',2000);
 function foodCard(x){let id=encodeURIComponent(x.name);return `<div class="item"><div><b>${esc(x.name)}</b><div class="muted">${x.unit||'100 g'} · P ${Math.round(x.protein||0)} · KH ${Math.round(x.carbs||0)} · F ${Math.round(x.fat||0)}</div></div><div><b>${Math.round(x.kcal)} kcal</b><div><button class="fav" onclick="toggleFav('${id}')">☆</button><button class="btn soft" onclick='quickAdd(${JSON.stringify(x).replace(/'/g,"&#39;")})'>+</button></div></div></div>`}
@@ -166,3 +226,32 @@ if($('quickBarcode'))$('quickBarcode').onclick=()=>{document.querySelector('[dat
 function closeQuickSheet(){$('quickEntryCard')?.classList.remove('open');$('sheetBackdrop')?.classList.remove('on');document.body.classList.remove('sheet-open');$('roughEstimateBox')?.classList.remove('on');$('manualEntryFields')?.classList.remove('on')}window.openQuickFor=t=>{let card=$('quickEntryCard');if(card)card.classList.add('open');$('sheetBackdrop')?.classList.add('on');document.body.classList.add('sheet-open');if(t&&$('type')){let v=decodeURIComponent(t);[...$('type').options].some(o=>o.value===v)&&($('type').value=v)}};if($('quickAddOpen'))$('quickAddOpen').onclick=()=>openQuickFor('');if($('quickAddClose'))$('quickAddClose').onclick=closeQuickSheet;if($('sheetBackdrop'))$('sheetBackdrop').onclick=closeQuickSheet;document.querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',()=>{let id=b.dataset.open;if(!id)return;document.querySelectorAll('.section').forEach(s=>s.classList.toggle('on',s.id===id));document.querySelectorAll('.bottom-nav .tab').forEach(t=>t.classList.toggle('on',t.dataset.t==='more'));window.scrollTo({top:0,behavior:'smooth'})}));
 let sp=new URLSearchParams(location.search),shared=sp.get('url')||'',fitnessImported=importFitnessParams(sp);if(shared){$('rurl').value=shared;document.querySelector('[data-t="recipes"]').click()}else if(fitnessImported){document.querySelector('[data-t="fitness"]').click();history.replaceState({},'',location.pathname)}function updateHomeGreeting(){let h=new Date().getHours(),g=h<11?'Guten Morgen! ☀️':h<18?'Guten Tag! 👋':'Guten Abend! 👋';if($('greeting'))$('greeting').textContent=g;let d=new Date();if($('headerDay'))$('headerDay').textContent=d.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long'});}updateHomeGreeting();applySettings();render();renderTemplates();searchFoods();
 if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
+
+
+const smartRecipes=[
+ {name:'Skyr-Beeren-Power-Bowl',emoji:'🫐',kcal:410,p:36,c:48,f:8,time:'5 Min.',ingredients:['300 g Skyr','100 g Beeren','40 g Haferflocken','10 g Nüsse','1 TL Honig'],steps:'Skyr in eine Schüssel geben, Beeren und Haferflocken darauf verteilen, mit Nüssen und Honig toppen.'},
+ {name:'Hähnchen-Reis-Gemüse-Bowl',emoji:'🍗',kcal:610,p:52,c:70,f:14,time:'25 Min.',ingredients:['180 g Hähnchenbrust','200 g gekochter Reis','200 g Gemüse','1 TL Olivenöl','Gewürze'],steps:'Hähnchen würzen und braten. Gemüse garen, mit Reis anrichten und Hähnchen daraufgeben.'},
+ {name:'Protein-Pasta Bolognese',emoji:'🍝',kcal:650,p:48,c:78,f:16,time:'25 Min.',ingredients:['100 g Pasta','150 g mageres Hack','200 g Tomaten','Zwiebel','Kräuter'],steps:'Pasta kochen. Hack und Zwiebel anbraten, Tomaten und Kräuter zugeben und mit der Pasta servieren.'},
+ {name:'Lachs mit Kartoffeln & Brokkoli',emoji:'🐟',kcal:590,p:43,c:52,f:22,time:'30 Min.',ingredients:['160 g Lachs','250 g Kartoffeln','200 g Brokkoli','Zitrone','Gewürze'],steps:'Kartoffeln garen. Lachs braten oder backen, Brokkoli dämpfen und alles mit Zitrone servieren.'},
+ {name:'Wrap mit Hähnchen & Joghurt-Dip',emoji:'🌯',kcal:520,p:45,c:55,f:14,time:'15 Min.',ingredients:['1 großer Vollkorn-Wrap','150 g Hähnchen','Salat & Tomate','80 g Joghurt','Gewürze'],steps:'Hähnchen braten. Wrap mit Gemüse, Hähnchen und gewürztem Joghurt füllen und einrollen.'},
+ {name:'Rührei-Avocado-Toast',emoji:'🍳',kcal:470,p:27,c:38,f:23,time:'10 Min.',ingredients:['3 Eier','2 Scheiben Vollkorntoast','½ Avocado','Tomaten'],steps:'Eier zu Rührei braten. Toast rösten, Avocado darauf verteilen und mit Rührei und Tomaten servieren.'},
+ {name:'Chili con Carne',emoji:'🥘',kcal:560,p:44,c:58,f:17,time:'30 Min.',ingredients:['150 g mageres Hack','120 g Kidneybohnen','100 g Mais','200 g Tomaten','Gewürze'],steps:'Hack anbraten, restliche Zutaten zugeben und 15–20 Minuten köcheln lassen.'},
+ {name:'Tofu-Gemüse-Curry',emoji:'🍛',kcal:540,p:30,c:60,f:20,time:'25 Min.',ingredients:['180 g Tofu','250 g Gemüse','150 g gekochter Reis','100 ml leichte Kokosmilch','Currypulver'],steps:'Tofu anbraten, Gemüse zugeben, mit Kokosmilch und Curry köcheln und mit Reis servieren.'},
+ {name:'Thunfisch-Kartoffel-Salat',emoji:'🥗',kcal:490,p:42,c:50,f:13,time:'20 Min.',ingredients:['1 Dose Thunfisch im eigenen Saft','250 g Kartoffeln','Gurke & Tomate','80 g Joghurt','Senf'],steps:'Kartoffeln garen und abkühlen. Mit Gemüse und Thunfisch mischen, Joghurt-Senf-Dressing unterheben.'},
+ {name:'Overnight Oats Protein',emoji:'🥣',kcal:450,p:32,c:58,f:10,time:'5 Min. + kaltstellen',ingredients:['60 g Haferflocken','200 ml Milch/Haferdrink','150 g Skyr','Beeren','Zimt'],steps:'Alles vermischen und über Nacht kaltstellen. Morgens mit Beeren toppen.'}
+];
+function recipeCard(r,featured=false){
+ const ing=r.ingredients.map(x=>`<li>${esc(x)}</li>`).join('');
+ return `<article class="smart-recipe ${featured?'featured':''}"><div class="recipe-photo">${r.emoji}</div><div class="recipe-body"><div class="recipe-top"><b>${esc(r.name)}</b><span>${r.time}</span></div><div class="recipe-macros"><strong>${r.kcal} kcal</strong><span>P ${r.p} g</span><span>KH ${r.c} g</span><span>F ${r.f} g</span></div><details><summary>Zutaten & Zubereitung</summary><ul>${ing}</ul><p>${esc(r.steps)}</p></details><button class="btn soft wide" onclick="addSmartRecipe('${encodeURIComponent(r.name)}')">Als Mahlzeit eintragen</button></div></article>`;
+}
+window.addSmartRecipe=name=>{
+ const r=smartRecipes.find(x=>x.name===decodeURIComponent(name));if(!r)return;
+ addMeal(r.name,r.kcal,r.p,r.c,r.f,'Rezept');
+};
+function renderSmartRecipes(){
+ const d=new Date(),day=Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/86400000);
+ const daily=smartRecipes[((day%smartRecipes.length)+smartRecipes.length)%smartRecipes.length];
+ const el=document.getElementById('dailyRecipe');if(el)el.innerHTML=recipeCard(daily,true);
+ const lib=document.getElementById('smartRecipeLibrary');if(lib)lib.innerHTML=smartRecipes.filter(x=>x!==daily).map(x=>recipeCard(x)).join('');
+}
+renderSmartRecipes();

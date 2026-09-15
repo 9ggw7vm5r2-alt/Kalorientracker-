@@ -68,3 +68,19 @@ main{width:min(760px,100%);padding-left:18px;padding-right:18px}
 .rough-estimate-box{display:none;padding:14px;border-radius:20px;background:rgba(16,185,129,.06);margin:0 0 14px}.rough-estimate-box.on{display:block}.rough-estimate-box textarea{min-height:82px;resize:none;margin:6px 0 10px}.rough-estimate-result-card{margin-top:12px;padding:14px;border-radius:18px;background:var(--card,#fff);box-shadow:0 5px 18px rgba(15,23,42,.06)}
 .rough-estimate-result-card .estimate-total{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.rough-estimate-result-card .estimate-total b{font-size:18px}.estimate-macros{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.estimate-macros div{padding:9px;border-radius:13px;background:rgba(148,163,184,.1);text-align:center}.estimate-macros b,.estimate-macros small{display:block}.estimate-macros small{margin-top:2px;color:var(--muted,#6b7280);font-size:11px}.estimate-note{font-size:12px;color:var(--muted,#6b7280);line-height:1.4;margin:8px 0 12px}
 @media(max-width:390px){.rough-estimate-entry{grid-template-columns:40px 1fr 18px;padding:13px}.rough-estimate-entry>span{width:40px;height:40px}.rough-estimate-entry small{font-size:11px}}
+
+/* V17 meal visuals + editing */
+.meal-row{display:flex;align-items:center;gap:12px}
+.meal-thumb{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;font-size:28px;background:linear-gradient(145deg,#f2f7ff,#e8f8ef);box-shadow:inset 0 0 0 1px rgba(20,40,80,.06);flex:0 0 48px}
+.meal-row-main{min-width:0;flex:1}
+.meal-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:6px}
+.meal-edit{border:0;border-radius:9px;padding:6px 9px;background:#eef5ff;color:#2463c7;font-weight:700}
+
+/* V18 echte Gerichtsfotos */
+.meal-photo-btn{border:0;padding:0;overflow:hidden;cursor:pointer;position:relative}
+.meal-photo-btn img{width:100%;height:100%;display:block;object-fit:cover}
+.meal-photo-btn span{font-size:24px;line-height:1}
+.meal-photo-btn small{position:absolute;bottom:2px;left:0;right:0;font-size:8px;font-weight:800;color:#47627c}
+
+/* V19 Kochbuch */
+.recipe-grid{display:grid;gap:12px}.smart-recipe{border:1px solid rgba(30,60,90,.08);border-radius:18px;overflow:hidden;background:#fff;margin-top:12px}.smart-recipe.featured{box-shadow:0 10px 30px rgba(30,80,120,.10)}.recipe-photo{height:112px;display:grid;place-items:center;font-size:64px;background:linear-gradient(135deg,#edf7ff,#eefbf3)}.recipe-body{padding:14px}.recipe-top{display:flex;justify-content:space-between;gap:10px}.recipe-top>b{font-size:17px}.recipe-top span{font-size:12px;color:#708090;white-space:nowrap}.recipe-macros{display:flex;gap:10px;flex-wrap:wrap;margin:9px 0;font-size:13px}.recipe-macros strong{color:#17945a}.smart-recipe details{margin:10px 0}.smart-recipe summary{font-weight:700;cursor:pointer}.smart-recipe ul{padding-left:20px;margin:8px 0}.smart-recipe p{line-height:1.45}.bottom-nav{overflow-x:auto}.bottom-nav .tab{min-width:64px}

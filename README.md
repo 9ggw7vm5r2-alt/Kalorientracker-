@@ -1,6 +1,9 @@
-# Kalorientracker V16 – Vercel
+# Kalorientracker V19 – Kochbuch
 
-- Fix: „Schätzung übernehmen“ speichert direkt in den Tagesdaten und ist unabhängig vom manuellen Formular.
-- Cache-Bust für app.js (`?v=16`).
-- Service-Worker-Cache auf V16 angehoben.
-- Statische Vercel-Version; Framework Preset: Other.
+- Neuer Hauptreiter „Kochbuch“.
+- Täglich wechselndes „Rezept des Tages“.
+- 10 ausgewogene, alltagstaugliche Rezeptideen mit Kalorien und Makros.
+- Zutaten, Zubereitung und Kochzeit direkt in der App.
+- Rezepte können mit einem Tipp als Mahlzeit eingetragen werden.
+- Gerichtsfotos/Bearbeiten aus V18 bleiben erhalten.
+- Cache-Bust V19.
