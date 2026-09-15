@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#19c56f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Kalorien">
+<link rel="manifest" href="/manifest.json">
+<title>Kalorien Tracker Pro</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body><main>
+<header class="app-header home-header">
+  <div class="home-heading"><b id="greeting">Guten Abend! 👋</b><span id="headerDay">Heute</span></div>
+  <div class="header-actions"><button class="header-action" aria-label="Benachrichtigungen">♢<i></i></button><button class="profile-action" aria-label="Profil">●</button></div>
+</header>
+<section id="today" class="section on">
+  <div class="date-strip"><input id="date" type="date"><input id="goal" type="number" value="2000" class="goal-hidden"></div>
+  <div class="hero-card">
+    <div class="hero-main">
+      <div class="arise-ring-wrap">
+        <div id="calorieRing" class="arise-ring" style="--p:0">
+          <div class="arise-ring-inner">
+            <b id="left">2000</b>
+            <span>Kalorien übrig</span>
+            <small><span id="usedRing">0</span> / <span id="heroGoalRing">2000</span> kcal</small>
+          </div>
+        </div>
+      </div>
+      <div class="hero-metrics">
+        <div class="hero-metric consumed"><span class="hero-metric-icon">🍴</span><div><b id="used">0</b><small>gegessen</small></div><em>kcal</em></div>
+        <div class="hero-metric activity"><span class="hero-metric-icon">🔥</span><div><b id="todayActive">0</b><small>durch Aktivität</small></div><em>kcal</em></div>
+        <div class="hero-metric target"><span class="hero-metric-icon">◎</span><div><b id="heroGoal">2000</b><small>Tagesziel</small></div><em>kcal</em></div>
+        <div class="activity-credit">+ <span id="activityCredit">0</span> kcal durch Aktivität</div>
+      </div>
+    </div>
+    <div class="macro-dashboard">
+      <div class="macro-dash-item protein"><div><span>Protein</span><b><span id="macroTopProtein">0</span> / <span id="macroTopProteinGoal">150</span> g</b></div><div class="macro-track"><i id="macroTopProteinBar"></i></div><small id="macroTopProteinPct">0 %</small></div>
+      <div class="macro-dash-item carbs"><div><span>Kohlenhydrate</span><b><span id="macroTopCarbs">0</span> / <span id="macroTopCarbsGoal">220</span> g</b></div><div class="macro-track"><i id="macroTopCarbsBar"></i></div><small id="macroTopCarbsPct">0 %</small></div>
+      <div class="macro-dash-item fat"><div><span>Fett</span><b><span id="macroTopFat">0</span> / <span id="macroTopFatGoal">65</span> g</b></div><div class="macro-track"><i id="macroTopFatBar"></i></div><small id="macroTopFatPct">0 %</small></div>
+    </div>
+  </div>
+
+  <div class="meal-diary-head"><div><h2>Meine Mahlzeiten</h2><p>Heute erfasst</p></div><button id="quickAddOpen" class="round-add" aria-label="Mahlzeit hinzufügen">＋</button></div>
+  <div id="entries" class="meal-groups"></div>
+
+  <div id="quickEntryCard" class="quick-entry-card" role="dialog" aria-modal="true" aria-label="Mahlzeit hinzufügen">
+    <div class="sheet-handle"></div>
+    <div class="card-title"><div><h2>Mahlzeit hinzufügen</h2><p class="muted">Wie möchtest du sie erfassen?</p></div><button id="quickAddClose" class="icon-close">×</button></div>
+    <button id="quickEstimate" class="rough-estimate-entry"><span>✨</span><div><b>Essen grob beschreiben</b><small>z. B. „2 Brötchen mit Käse und Kaffee“ – die App schätzt Kalorien & Makros</small></div><em>›</em></button>
+    <div id="roughEstimateBox" class="rough-estimate-box">
+      <label>Was hast du gegessen?</label>
+      <textarea id="roughEstimateText" rows="3" placeholder="z. B. große Portion Spaghetti Bolognese und ein Glas Cola"></textarea>
+      <button id="roughEstimateRun" class="btn primary wide">Nährwerte schätzen</button>
+      <div id="roughEstimateResult"></div>
+    </div>
+    <div class="quick-methods">
+      <button id="quickPhoto" class="quick-method photo"><span>📷</span><b>Foto-KI</b><small>Foto machen<br>oder hochladen</small></button>
+      <button id="quickSearch" class="quick-method search"><span>⌕</span><b>Suche</b><small>Lebensmittel<br>finden</small></button>
+      <button id="quickBarcode" class="quick-method barcode"><span>▥</span><b>Barcode</b><small>Produkt<br>scannen</small></button>
+      <button id="quickManual" class="quick-method manual"><span>▤</span><b>Manuell</b><small>Selbst<br>eintragen</small></button>
+    </div>
+    <input id="quickPhotoFile" class="quick-photo-file" type="file" accept="image/*" capture="environment">
+    <div id="quickPhotoStatus" class="quick-photo-status"></div>
+    <div id="manualEntryFields" class="manual-entry-fields">
+      <div class="grid3"><div><label>Lebensmittel</label><input id="food" placeholder="z. B. Skyr mit Beeren"></div><div><label>Kalorien</label><input id="kcal" type="number"></div><div><label>Protein g</label><input id="protein" type="number" step="0.1"></div><div><label>Kohlenhydrate g</label><input id="carbs" type="number" step="0.1"></div><div><label>Fett g</label><input id="fat" type="number" step="0.1"></div><div><label>Kategorie</label><select id="type"><option>Frühstück</option><option>Mittagessen</option><option>Abendessen</option><option>Snack</option><option>Getränk</option></select></div></div><button id="add" class="btn primary wide">Eintrag hinzufügen</button>
+    </div>
+  </div>
+  <div id="sheetBackdrop" class="sheet-backdrop"></div>
+
+  <div class="card compact-card"><div class="card-title"><div><h2>Fitness heute</h2></div><button class="text-link" id="openFitness">Details</button></div><div class="fitness-mini"><div><span>👟</span><b id="todaySteps">0</b><small>Schritte</small></div><div><span>🔥</span><b id="todayActiveMirror">0</b><small>Aktiv-kcal</small></div><div><span>⏱</span><b id="todayExercise">0</b><small>Minuten</small></div></div></div>
+  <div class="card compact-card"><div class="card-title"><div><h2>Vorlagen</h2></div></div><div id="templatesToday"></div></div>
+  <div id="macroSummary" hidden></div><div id="count" hidden>0</div><div id="prot" hidden>0</div><div id="progressText" hidden>0 %</div><div class="progress ring-progress" hidden><i id="bar"></i></div>
+</section>
+
+<section id="foods" class="section">
+<div class="card"><h2>Lebensmitteldatenbank</h2><div class="row"><input id="foodSearch" placeholder="Suche: Banane, Reis, Skyr …"><button id="foodSearchBtn" class="btn primary">Suchen</button></div><div id="foodResults" class="search-results"></div></div>
+<div class="card"><h2>Barcode</h2><p class="notice">Barcode eintippen oder mit einer Scanner-App/Kamera kopieren. Die App versucht das Produkt über Open Food Facts zu finden.</p><div class="row"><input id="barcode" inputmode="numeric" placeholder="z. B. 4008400402222"><button id="lookupBarcode" class="btn primary">Suchen</button></div><div id="barcodeResult"></div></div>
+<div class="card"><h2>Favoriten</h2><div id="favorites"></div></div>
+<div class="card"><h2>Vorlagen</h2><div id="templates"></div><button id="saveTemplate" class="btn soft wide">Aktuelle Tagesauswahl als Vorlage speichern</button></div>
+</section>
+
+<section id="stats" class="section">
+<div class="card"><h2>Wochenstatistik</h2><div class="stats"><div class="stat">Ø kcal<b id="avgKcal">0</b></div><div class="stat">Ø Protein<b id="avgProt">0</b></div><div class="stat">Zieltreffer<b id="goalHits">0</b></div><div class="stat">Tage<b id="daysTracked">0</b></div></div><div id="weekChart" class="chart"></div></div>
+<div class="card"><h2>Makro-Woche</h2><div id="weekMacros"></div></div>
+</section>
+
+
+<section id="fitness" class="section">
+<div class="section-head"><div><div class="eyebrow">AKTIVITÄT</div><h2>Fitness & Bewegung</h2></div><span class="section-hint">Tageswerte vom iPhone</span></div>
+<div class="card fitness-hero"><div class="fitness-grid"><div class="fitness-stat steps"><span>👟</span><b id="fitSteps">0</b><small>Schritte</small></div><div class="fitness-stat active"><span>🔥</span><b id="fitActive">0</b><small>Aktiv-kcal</small></div><div class="fitness-stat exercise"><span>⏱</span><b id="fitExercise">0</b><small>Trainingsmin.</small></div><div class="fitness-stat distance"><span>📍</span><b id="fitDistance">0</b><small>km</small></div></div></div>
+<div class="card"><div class="card-title"><div><div class="eyebrow">MANUELL</div><h2>Fitnesswerte eintragen</h2></div></div><div class="grid"><div><label>Schritte</label><input id="stepsInput" type="number" inputmode="numeric" placeholder="8500"></div><div><label>Aktivkalorien</label><input id="activeInput" type="number" placeholder="420"></div><div><label>Trainingsminuten</label><input id="exerciseInput" type="number" placeholder="45"></div><div><label>Distanz km</label><input id="distanceInput" type="number" step="0.01" placeholder="6.8"></div></div><button id="saveFitness" class="btn primary wide">Fitnesswerte speichern</button></div>
+<div class="card"><div class="card-title"><div><div class="eyebrow">APPLE HEALTH</div><h2>Automatische Übergabe</h2></div><span class="card-icon">♥︎</span></div><p class="notice"><b>Direktes HealthKit-Auslesen ist für Web-Apps von Apple gesperrt.</b> Mit einer iPhone-Kurzbefehls-Automation kannst du Schritte, Aktivkalorien, Trainingsminuten und Distanz trotzdem automatisch an diese App übergeben.</p><ol class="setup-list"><li>In „Kurzbefehle“ eine neue Automation erstellen.</li><li>Health-Daten des heutigen Tages abrufen und summieren.</li><li>Diese App mit den Parametern <code>steps</code>, <code>active</code>, <code>exercise</code> und <code>distance</code> öffnen.</li></ol><button id="copyFitnessLink" class="btn soft wide">Vorlage für Kurzbefehls-Link kopieren</button><p id="fitnessCopyMsg" class="muted"></p></div>
+<div class="card"><h2>Letzte 7 Tage</h2><div id="fitnessWeek"></div></div>
+</section>
+
+<section id="plan" class="section">
+<div class="card"><h2>Kalorienbedarf</h2><div class="grid"><div><label>Geschlecht</label><select id="sex"><option value="m">Männlich</option><option value="f">Weiblich</option></select></div><div><label>Alter</label><input id="age" type="number" value="30"></div><div><label>Größe cm</label><input id="height" type="number" value="175"></div><div><label>Gewicht kg</label><input id="bw" type="number" step="0.1" value="75"></div><div><label>Aktivität</label><select id="activity"><option value="1.2">Kaum aktiv</option><option value="1.375">Leicht aktiv</option><option value="1.55" selected>Moderat aktiv</option><option value="1.725">Sehr aktiv</option></select></div><div><label>Ziel</label><select id="target"><option value="-500">Abnehmen</option><option value="0" selected>Halten</option><option value="300">Zunehmen</option></select></div></div><button id="calc" class="btn primary wide">Bedarf berechnen</button><p>Grundumsatz: <b id="bmr">–</b> · Erhaltung: <b id="tdee">–</b> · Ziel: <b id="needGoal">–</b></p><button id="applyGoal" class="btn soft wide">Als Tagesziel übernehmen</button></div>
+<div class="card"><h2>KI-/Smart-Ernährungsplan</h2><p class="notice">Die App erstellt einen Tagesplan passend zu Kalorien- und Makrozielen. Wenn das KI-Backend verfügbar ist, wird es genutzt; sonst erzeugt sie lokal einen sinnvollen Beispielplan.</p><div class="grid"><div><label>Ernährung</label><select id="diet"><option>Allesesser</option><option>Vegetarisch</option><option>Vegan</option></select></div><div><label>Mahlzeiten</label><select id="mealCount"><option>3</option><option selected>4</option><option>5</option></select></div></div><label>Wünsche / Allergien</label><textarea id="preferences" placeholder="z. B. kein Fisch, schnell, günstig, laktosefrei"></textarea><button id="makePlan" class="btn primary wide">Plan erstellen</button><div id="mealPlan"></div></div>
+</section>
+
+<section id="weight" class="section">
+<div class="card"><h2>Gewicht</h2><div class="row"><div><label>Datum</label><input id="wdate" type="date"></div><div><label>kg</label><input id="wval" type="number" step="0.1"></div></div><button id="wadd" class="btn primary wide">Speichern</button></div><div class="card"><div id="weights"></div></div>
+</section>
+
+<section id="recipes" class="section">
+<div class="card"><h2>Eigenes Rezept</h2><input id="recipeName" placeholder="Rezeptname"><label>Zutaten (eine pro Zeile)</label><textarea id="recipeIngredients"></textarea><label>Schritte (eine pro Zeile)</label><textarea id="recipeSteps"></textarea><div class="grid3"><input id="recipeKcal" type="number" placeholder="kcal/Portion"><input id="recipeProt" type="number" placeholder="Protein g"><input id="recipeServings" type="number" value="1" placeholder="Portionen"></div><button id="saveRecipe" class="btn primary wide">Rezept speichern</button></div>
+<div class="card"><h2>Instagram / TikTok importieren</h2><input id="rurl" placeholder="https://…"><label>Caption / Rezepttext (falls nötig)</label><textarea id="rtext"></textarea><button id="rimport" class="btn primary wide">Rezept importieren</button><p id="rmsg" class="muted"></p><div id="importedRecipe"></div></div>
+<div class="card"><h2>Meine Rezepte</h2><div id="recipeLibrary"></div></div>
+</section>
+
+<section id="photo" class="section"><div class="card"><h2>Essensfoto analysieren</h2><p class="notice">Foto-Schätzungen sind nicht exakt. Öle, Saucen und Portionsgrößen können stark abweichen.</p><input id="photoFile" type="file" accept="image/*" capture="environment"><img id="preview" style="display:none;width:100%;max-height:360px;object-fit:contain;border-radius:14px;margin-top:10px"><button id="analyze" class="btn primary wide">Foto analysieren</button><p id="photoMsg" class="muted"></p><div id="photoResult"></div></div></section>
+
+
+<section id="more" class="section">
+<div class="section-head"><div><div class="eyebrow">WEITERE FUNKTIONEN</div><h2>Mehr</h2></div><span class="section-hint">Alles an einem Ort</span></div>
+<div class="more-grid">
+  <button class="more-card" data-open="plan"><span class="more-icon">◎</span><b>Plan & Bedarf</b><small>Kalorienziel und Ernährungsplan</small></button>
+  <button class="more-card" data-open="weight"><span class="more-icon">↕</span><b>Gewicht</b><small>Gewichtsverlauf dokumentieren</small></button>
+  <button class="more-card" data-open="recipes"><span class="more-icon">⌑</span><b>Rezepte</b><small>Eigene & Social-Rezepte</small></button>
+  <button class="more-card" data-open="photo"><span class="more-icon">◉</span><b>Foto-KI</b><small>Mahlzeit per Foto erfassen</small></button>
+  <button class="more-card" data-open="settings"><span class="more-icon">⚙</span><b>Einstellungen</b><small>Ziele, Dark Mode & Daten</small></button>
+</div>
+</section>
+<section id="settings" class="section">
+<div class="card cloud-card" id="cloudCard">
+  <div class="card-title"><div><div class="eyebrow">CLOUD-SYNC</div><h2>Konto & Sicherung</h2></div><span class="cloud-badge" id="cloudBadge">Offline</span></div>
+  <p class="notice" id="cloudIntro">Deine Daten bleiben lokal auf dem iPhone gespeichert. Nach dem Verbinden eines Kontos werden sie zusätzlich geschützt in der Cloud gesichert und auf deinen Geräten synchronisiert.</p>
+  <div id="cloudLoggedOut">
+    <label>E-Mail</label><input id="cloudEmail" type="email" autocomplete="email" placeholder="name@beispiel.de">
+    <label>Passwort</label><input id="cloudPassword" type="password" autocomplete="current-password" minlength="8" placeholder="Mindestens 8 Zeichen">
+    <div class="cloud-actions"><button id="cloudLogin" class="btn primary">Anmelden</button><button id="cloudRegister" class="btn soft">Konto erstellen</button></div>
+  </div>
+  <div id="cloudLoggedIn" hidden>
+    <div class="cloud-user"><div><small>Angemeldet als</small><b id="cloudUserEmail">–</b></div><button id="cloudLogout" class="btn soft">Abmelden</button></div>
+    <div class="cloud-status-grid"><div><small>Letzte Sicherung</small><b id="cloudLastSync">Noch nie</b></div><div><small>Status</small><b id="cloudStatusText">Bereit</b></div></div>
+    <button id="cloudSyncNow" class="btn primary wide">Jetzt synchronisieren</button>
+  </div>
+  <p id="cloudMessage" class="muted"></p>
+</div>
+<div class="card"><h2>Makroziele</h2><div class="grid3"><div><label>Protein g</label><input id="proteinGoal" type="number" value="150"></div><div><label>Kohlenhydrate g</label><input id="carbGoal" type="number" value="220"></div><div><label>Fett g</label><input id="fatGoal" type="number" value="65"></div></div><button id="saveMacros" class="btn primary wide">Speichern</button></div>
+<div class="card"><h2>Dark Mode</h2><label class="switch"><input id="darkMode" type="checkbox"> Dunkles Design verwenden</label></div>
+<div class="card"><h2>Erinnerungen</h2><p class="notice">Auf dem iPhone kann eine PWA keine garantiert geplanten System-Benachrichtigungen ausführen, wenn sie komplett geschlossen ist. Diese Erinnerung erscheint beim Öffnen bzw. solange die App aktiv ist.</p><label class="switch"><input id="reminderOn" type="checkbox"> Tägliche Erinnerung aktivieren</label><label>Uhrzeit</label><input id="reminderTime" type="time" value="19:00"><button id="saveReminder" class="btn soft wide">Erinnerung speichern</button></div>
+<div class="card"><h2>Fitness & Kalorienbudget</h2><label class="switch"><input id="creditActive" type="checkbox"> Aktivkalorien zum Tagesbudget hinzufügen</label><p class="muted">Aus: Übrig = Ziel − gegessene Kalorien. An: Übrig = Ziel + Aktivkalorien − gegessene Kalorien.</p></div>
+<div class="card"><h2>Apple Health</h2><p class="notice"><b>Direkte Apple-Health-Synchronisierung ist in einer Web-App technisch nicht möglich.</b> Apple erlaubt HealthKit nur nativen iOS-Apps. Du kannst deine Daten aber exportieren; für echte HealthKit-Synchronisierung wäre später eine signierte native iPhone-App nötig.</p><button id="exportData" class="btn soft wide">Meine Daten exportieren</button></div>
+<div class="card"><h2>Daten</h2><button id="clearAll" class="btn danger wide">Alle lokalen App-Daten löschen</button></div>
+</section>
+
+
+<nav class="bottom-nav" aria-label="Hauptnavigation">
+  <button class="tab on" data-t="today"><span>⌂</span><small>Heute</small></button>
+  <button class="tab" data-t="foods"><span>＋</span><small>Essen</small></button>
+  <button class="tab" data-t="fitness"><span>♥</span><small>Fitness</small></button>
+  <button class="tab" data-t="stats"><span>▥</span><small>Statistik</small></button>
+  <button class="tab" data-t="more"><span>•••</span><small>Mehr</small></button>
+</nav>
+<script src="/app.js"></script>
+<script src="/cloud-config.js"></script>
+<script src="/cloud.js"></script></main></body></html>
